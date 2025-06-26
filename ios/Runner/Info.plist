@@ -28,10 +28,20 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs camera access to take photos for avatar.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>This app needs access to local network to connect to development servers</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We need access to your microphone for voice calls.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs photo library access to select photos for avatar.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>This identifier will be used to deliver personalized dance partner recommendations and improve your experience finding compatible dance partners.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
