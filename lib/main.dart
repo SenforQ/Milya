@@ -39,8 +39,8 @@ class MilyaApp extends StatelessWidget {
           foregroundColor: Colors.black,
         ),
       ),
-      // home: const AgreementPage(),
-      home: const MainTabPage(),
+      home: const AgreementPage(),
+      // home: const MainTabPage(),
     );
   }
 }
