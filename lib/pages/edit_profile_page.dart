@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import '../utils/user_data.dart';
 import '../utils/image_manager.dart';
+import '../services/vip_service.dart';
+import 'vip_benefits_page.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -17,6 +19,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   String _originalAvatar = ''; // 保存原始头像，用于取消时恢复
   String _previewAvatar = ''; // 预览头像，用于显示
   bool _isLoading = false;
+  bool _isVip = false;
 
   @override
   void initState() {
@@ -28,12 +31,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final nickname = await UserData.getUserNickname();
     final signature = await UserData.getUserSignature();
     final avatar = await UserData.getUserAvatar();
+    final isVip = await VipService.isVipActive();
 
     setState(() {
       _nicknameController.text = nickname;
       _signatureController.text = signature;
       _originalAvatar = avatar; // 保存原始头像
       _previewAvatar = avatar; // 初始预览头像与原始头像相同
+      _isVip = isVip;
     });
   }
 
@@ -43,6 +48,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
     });
 
     try {
+      // 检查VIP状态
+      final isVip = await VipService.isVipActive();
+
+      // 如果用户不是VIP，显示升级提示并阻止保存
+      if (!isVip) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+          _showVipUpgradeDialog('profile editing');
+        }
+        return;
+      }
+
       // 保存用户数据
       await UserData.setUserNickname(_nicknameController.text.trim());
       await UserData.setUserSignature(_signatureController.text.trim());
@@ -56,13 +75,27 @@ class _EditProfilePageState extends State<EditProfilePage> {
         }
       }
 
-      // 显示成功提示
+      // 显示成功提示，根据VIP状态显示不同消息
       if (mounted) {
+        String message = 'Profile saved successfully!';
+        if (isVip) {
+          final remainingDays = await VipService.getVipRemainingDays();
+          message += ' (VIP: $remainingDays days remaining)';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile saved successfully!'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Row(
+              children: [
+                if (isVip) ...[
+                  const Icon(Icons.diamond, color: Color(0xFFFFD700), size: 20),
+                  const SizedBox(width: 8),
+                ],
+                Expanded(child: Text(message)),
+              ],
+            ),
+            backgroundColor: isVip ? const Color(0xFF8B5CF6) : Colors.green,
+            duration: const Duration(seconds: 3),
           ),
         );
 
@@ -273,10 +306,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
-            color:
-                isSelected
-                    ? const Color(0xFF8B5CF6)
-                    : Colors.grey.withOpacity(0.3),
+            color: isSelected
+                ? const Color(0xFF8B5CF6)
+                : Colors.grey.withOpacity(0.3),
             width: isSelected ? 3 : 2,
           ),
         ),
@@ -351,6 +383,133 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
+  void _showVipUpgradeDialog(String featureUsed) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.diamond,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'VIP Feature',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Profile editing is only available for VIP members.',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black87,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF3E0),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange, width: 1),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.star,
+                      color: Colors.orange,
+                      size: 20,
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Upgrade to VIP to unlock this and many other premium features!',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.orange,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text(
+                'Later',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // 跳转到VIP购买页面
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const VipBenefitsPage(),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
+              ),
+              child: const Text(
+                'Upgrade VIP',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _onBack() {
     // 如果头像发生了变化但没有保存，删除临时的本地图片文件
     if (_previewAvatar != _originalAvatar &&
@@ -417,17 +576,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         ),
                       ),
                       child: ClipOval(
-                        child:
-                            _previewAvatar.isNotEmpty
-                                ? _buildAvatarImage(_previewAvatar, 100)
-                                : Container(
-                                  color: Colors.grey[300],
-                                  child: const Icon(
-                                    Icons.person,
-                                    size: 50,
-                                    color: Colors.grey,
-                                  ),
+                        child: _previewAvatar.isNotEmpty
+                            ? _buildAvatarImage(_previewAvatar, 100)
+                            : Container(
+                                color: Colors.grey[300],
+                                child: const Icon(
+                                  Icons.person,
+                                  size: 50,
+                                  color: Colors.grey,
                                 ),
+                              ),
                       ),
                     ),
 
@@ -574,26 +732,25 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         borderRadius: BorderRadius.circular(25),
                       ),
                     ),
-                    child:
-                        _isLoading
-                            ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
-                            : const Text(
-                              'Save Changes',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
                               ),
                             ),
+                          )
+                        : const Text(
+                            'Save Changes',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                 ),
               ),
