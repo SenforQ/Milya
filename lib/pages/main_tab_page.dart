@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_page.dart';
 import 'avatar_page.dart';
+import 'favorite_page.dart';
 import 'chats_page.dart';
 import 'me_page.dart';
 import '../services/music_service.dart';
@@ -22,6 +23,7 @@ class _MainTabPageState extends State<MainTabPage> {
   final List<Widget> _pages = [
     const HomePage(),
     const AvatarPage(),
+    const FavoritePage(),
     const ChatsPage(),
     const MePage(),
   ];
@@ -35,6 +37,10 @@ class _MainTabPageState extends State<MainTabPage> {
     TabConfig(
       normalIcon: 'assets/images/btn_tab_avatar_pre_20250625.png',
       selectedIcon: 'assets/images/btn_tab_avatar_nor_20250625.png',
+    ),
+    TabConfig(
+      normalIcon: 'assets/images/btn_tab_follow_pre_20250625.png',
+      selectedIcon: 'assets/images/btn_tab_follow_nor_20250625.png',
     ),
     TabConfig(
       normalIcon: 'assets/images/btn_tab_chats_pre_20250625.png',
@@ -208,8 +214,10 @@ class _MainTabPageState extends State<MainTabPage> {
       case 1:
         return Icons.person;
       case 2:
-        return Icons.chat;
+        return Icons.favorite;
       case 3:
+        return Icons.chat;
+      case 4:
         return Icons.account_circle;
       default:
         return Icons.circle;
