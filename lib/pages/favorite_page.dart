@@ -263,9 +263,11 @@ Shared from Milya - Your Jewelry Photography App
           .trim();
 
       // Share using native iOS share sheet
-      Share.share(
-        shareText,
-        subject: 'Check out this beautiful jewelry: ${favorite['title']}',
+      SharePlus.instance.share(
+        ShareParams(
+          text: shareText,
+          subject: 'Check out this beautiful jewelry: ${favorite['title']}',
+        ),
       );
     } catch (e) {
       // Fallback if sharing fails
